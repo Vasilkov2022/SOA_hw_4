@@ -8,5 +8,4 @@ producer = Producer({"bootstrap.servers": BOOTSTRAP})
 
 def send(topic: str, value: dict):
     producer.produce(topic, json.dumps(value).encode())
-    # fire-and-forget, но для юнит-тестов можно пробрасывать delivery_report
     producer.poll(0)
