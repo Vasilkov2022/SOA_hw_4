@@ -1,0 +1,88 @@
+version: '3.7'
+
+services:
+  db:
+    image: postgres:15
+    container_name: user_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_db
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "user", "-d", "user_db"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  user_service:
+    build: ./user_service
+    container_name: user_service
+    environment:
+      DB_HOST: db
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: user_db
+      DB_PORT: 5432
+      SECRET_KEY: "MY_SUPER_SECRET_KEY"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+
+  api_service:
+    build: ./api_service
+    container_name: api_service
+    environment:
+      USER_SERVICE_URL: "http://user_service:8001"
+      POST_API_URL: "http://api_post_service:8002"
+    depends_on:
+      - user_service
+      - api_post_service  # Прокси должен дождаться, когда api_post_service поднимется
+    ports:
+      - "8000:8000"
+
+  post_service:
+    build: ./post_service
+    container_name: post_service
+    ports:
+      - "50051:50051"
+
+
+  api_post_service:
+    build: ./api_post_service
+    container_name: api_post_service
+    environment:
+      SECRET_KEY: "MY_SUPER_SECRET_KEY"
+      GRPC_POST_SERVICE: "post_service:50051"
+    depends_on:
+      - post_service
+    ports:
+      - "8002:8002"
+
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports: [ "2181:2181" ]
+
+  kafka:
+    image: bitnami/kafka:3.7
+    depends_on: [ zookeeper ]
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    ports: [ "9092:9092" ]
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    depends_on: [ kafka ]
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    ports: [ "8080:8080" ]

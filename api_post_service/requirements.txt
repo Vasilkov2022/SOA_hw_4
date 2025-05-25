@@ -1,0 +1,8 @@
+grpcio==1.54.0
+grpcio-tools==1.54.0
+googleapis-common-protos==1.59.0
+pydantic==1.10.7
+PyJWT==2.6.0
+python-multipart==0.0.5
+uvicorn==0.22.0
+fastapi==0.95.0

@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package post;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+message Post {
+  string id              = 1;
+  string title           = 2;
+  string description     = 3;
+  string creator_id      = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  bool   is_private      = 7;
+  repeated string tags   = 8;
+}
+
+message Comment {
+  string id              = 1;
+  string post_id         = 2;
+  string author_id       = 3;
+  string text            = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message CreatePostRequest { /* как было */ }
+message CreatePostResponse { Post post = 1; }
+
+message GetPostRequest   { string user_id = 1; string post_id = 2; }
+message GetPostResponse  { Post   post    = 1; }
+
+/* --- НОВЫЕ --- */
+message ViewPostRequest  { string user_id = 1; string post_id = 2; }
+message LikePostRequest  { string user_id = 1; string post_id = 2; }
+
+message CommentPostRequest {
+  string user_id = 1;
+  string post_id = 2;
+  string text    = 3;
+}
+message CommentPostResponse { Comment comment = 1; }
+
+message ListCommentsRequest {
+  string post_id = 1;
+  int32  page     = 2;
+  int32  page_size= 3;
+}
+message ListCommentsResponse {
+  repeated Comment comments = 1;
+  int32  total      = 2;
+  int32  page       = 3;
+  int32  page_size  = 4;
+}
+
+service PostService {
+  rpc CreatePost (CreatePostRequest) returns (CreatePostResponse);
+  rpc GetPost    (GetPostRequest)    returns (GetPostResponse);
+  rpc UpdatePost (/* ... */)         returns (/* ... */);
+  rpc DeletePost (/* ... */)         returns (google.protobuf.Empty);
+  rpc ListPosts  (/* ... */)         returns (/* ... */);
+
+  /* новые вызовы */
+  rpc ViewPost   (ViewPostRequest)   returns (google.protobuf.Empty);
+  rpc LikePost   (LikePostRequest)   returns (google.protobuf.Empty);
+  rpc CommentPost(CommentPostRequest)returns (CommentPostResponse);
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
+}
